@@ -10,7 +10,7 @@ name = "substrate-padawan"
 clap = { version = "4", features = ["derive"]}
 env_logger = "0.9"
 futures = "0.3"
-libp2p = { version = "0.50", features = ["tcp", "tokio", "ping", "dns", "websocket", "mplex", "noise", "yamux", "macros"] }
+libp2p = { version = "0.50", features = ["tcp", "tokio", "noise", "yamux"] }
 tokio = { version = "1", features = ["full"] }
 tracing = "0.1"
 tracing-subscriber = "0.2"
