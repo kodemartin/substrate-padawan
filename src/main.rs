@@ -2,9 +2,9 @@ use std::net::Ipv4Addr;
 use std::time::Duration;
 
 use clap::Parser;
-use libp2p::swarm::dummy;
 use libp2p::multiaddr;
-use substrate_padawan::{handshake, SwarmPadawan};
+use libp2p::swarm::dummy;
+use substrate_padawan::{error, handshake, SwarmPadawan};
 use tracing_subscriber::FmtSubscriber;
 
 fn use_tracing_subscriber() {
@@ -31,7 +31,7 @@ struct CliArgs {
 }
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
+async fn main() -> error::Result<()> {
     use_tracing_subscriber();
     env_logger::init();
 

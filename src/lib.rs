@@ -8,6 +8,8 @@ use libp2p::swarm::{dummy, NetworkBehaviour, Swarm, SwarmEvent};
 use libp2p::{core, identity, multiaddr, noise, tcp, yamux, PeerId, Transport};
 use tracing::info;
 
+pub mod error;
+
 /// The default timeout for incoming and outgoing connections
 pub const DEFAULT_TIMEOUT_SECS: u64 = 20;
 
@@ -68,7 +70,7 @@ impl<T: NetworkBehaviour> SwarmPadawan<T> {
 pub async fn handshake(
     padawan: SwarmPadawan<dummy::Behaviour>,
     remote: multiaddr::Multiaddr,
-) -> Result<(), Box<dyn std::error::Error>> {
+) -> error::Result<()> {
     let mut swarm = padawan.swarm();
     swarm.listen_on("/ip4/0.0.0.0/tcp/0".parse()?)?;
     swarm.dial(remote.clone())?;
