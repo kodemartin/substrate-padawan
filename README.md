@@ -67,13 +67,12 @@ $ cargo run -- 127.0.0.1 --port 30333
 Nov 26 20:29:39.863  INFO substrate_padawan: Local peer id: PeerId("12D3KooWBY6VaEdkTCSXP3nXWBc6xGiSjM2MHbZPKK8ByDyJjaqp")
 Nov 26 20:29:39.864  INFO substrate_padawan: Dialed remote: /ip4/127.0.0.1/tcp/30333
 Nov 26 20:29:39.865  INFO substrate_padawan: Listening on "/ip4/127.0.0.1/tcp/38127"
-Nov 26 20:29:39.865  INFO substrate_padawan: Listening on "/ip4/172.25.67.222/tcp/38127"
 Nov 26 20:29:39.868  INFO substrate_padawan: Established connection with PeerId("12D3KooWP2zu3EMZU8pJCDmyxNXEY2W7SzQSxLataA2DgCwYrh72")
 ```
 
 ## Additional resources
 
-* [`smoldot`][smoldot]
+* [smoldot][smoldot]
 
 [mstream]: https://github.com/multiformats/multistream-select
 [node-install]: https://github.com/substrate-developer-hub/substrate-node-template#rust-setup
