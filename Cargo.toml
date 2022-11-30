@@ -6,6 +6,10 @@ edition = "2021"
 [[bin]]
 name = "substrate-padawan"
 
+[[bin]]
+name = "substrate-ground"
+path = "src/ground.rs"
+
 [dependencies]
 clap = { version = "4", features = ["derive"]}
 env_logger = "0.9"
@@ -15,4 +19,5 @@ thiserror = "1"
 tokio = { version = "1", features = ["full"] }
 tracing = "0.1"
 tracing-subscriber = "0.2"
+unsigned-varint = "0.7"
 void = "1"

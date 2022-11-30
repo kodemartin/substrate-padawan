@@ -9,6 +9,8 @@ use libp2p::{core, identity, multiaddr, noise, tcp, yamux, PeerId, Transport};
 use tracing::info;
 
 pub mod error;
+pub mod handshake;
+pub mod multistream_select;
 
 /// The default timeout for incoming and outgoing connections
 pub const DEFAULT_TIMEOUT_SECS: u64 = 20;

@@ -7,6 +7,8 @@ use thiserror::Error;
 #[derive(Error, Debug)]
 pub enum PadawanError {
     #[error(transparent)]
+    Io(#[from] std::io::Error),
+    #[error(transparent)]
     AddressParse(#[from] AddrParseError),
     #[error(transparent)]
     SwarmDial(#[from] DialError),
