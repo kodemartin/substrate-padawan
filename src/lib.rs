@@ -5,12 +5,13 @@ use std::time::Duration;
 
 use futures::StreamExt;
 use libp2p::swarm::{dummy, NetworkBehaviour, Swarm, SwarmEvent};
-use libp2p::{core, identity, multiaddr, noise, tcp, yamux, PeerId, Transport};
+use libp2p::{core, identity, multiaddr, noise::NoiseAuthenticated, tcp, yamux, PeerId, Transport};
 use tracing::info;
 
 pub mod error;
 pub mod handshake;
 pub mod multistream_select;
+pub mod noise;
 
 /// The default timeout for incoming and outgoing connections
 pub const DEFAULT_TIMEOUT_SECS: u64 = 20;
@@ -55,7 +56,7 @@ impl<T: NetworkBehaviour> SwarmPadawan<T> {
     fn transport(&self) -> BoxedTransport {
         tcp::tokio::Transport::new(tcp::Config::new().nodelay(true))
             .upgrade(core::upgrade::Version::V1)
-            .authenticate(noise::NoiseAuthenticated::xx(&self.keypair).unwrap())
+            .authenticate(NoiseAuthenticated::xx(&self.keypair).unwrap())
             .multiplex(yamux::YamuxConfig::default())
             .timeout(self.timeout)
             .boxed()

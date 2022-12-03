@@ -6,6 +6,20 @@ use thiserror::Error;
 /// Variants of service-specific errors.
 #[derive(Error, Debug)]
 pub enum PadawanError {
+    #[error("missing remote noise key")]
+    MissingRemoteNoiseKey,
+    #[error("could not verify remote peer identity")]
+    IdVerification,
+    #[error(transparent)]
+    SigningError(#[from] libp2p::identity::error::SigningError),
+    #[error(transparent)]
+    KeyDecodeError(#[from] libp2p::identity::error::DecodingError),
+    #[error(transparent)]
+    EncodePayload(#[from] prost::EncodeError),
+    #[error(transparent)]
+    DecodePayload(#[from] prost::DecodeError),
+    #[error(transparent)]
+    Snow(#[from] snow::error::Error),
     #[error(transparent)]
     Io(#[from] std::io::Error),
     #[error(transparent)]
