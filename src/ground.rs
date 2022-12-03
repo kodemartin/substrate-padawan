@@ -3,11 +3,12 @@ use std::net::Ipv4Addr;
 use clap::Parser;
 use substrate_padawan::{error, handshake};
 use tokio::net::TcpStream;
-use tracing_subscriber::FmtSubscriber;
+use tracing_subscriber::{FmtSubscriber, EnvFilter};
 
 fn use_tracing_subscriber() {
     let subscriber = FmtSubscriber::builder()
         .with_max_level(tracing::Level::TRACE)
+        .with_env_filter(EnvFilter::from_default_env())
         .finish();
 
     tracing::subscriber::set_global_default(subscriber).expect("setting default subscriber failed");
