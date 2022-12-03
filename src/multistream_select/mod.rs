@@ -42,12 +42,14 @@ impl From<Protocol> for EncodedProtocol {
     }
 }
 
-impl EncodedProtocol {
-    pub fn as_bytes_mut(&mut self) -> &[u8] {
-        self.0.as_mut_slice()
+impl AsMut<[u8]> for EncodedProtocol {
+    fn as_mut(&mut self) -> &mut [u8] {
+        self.0.as_mut()
     }
+}
 
-    pub fn as_bytes(&self) -> &[u8] {
+impl AsRef<[u8]> for EncodedProtocol {
+    fn as_ref(&self) -> &[u8] {
         self.0.as_ref()
     }
 }

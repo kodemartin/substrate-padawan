@@ -3,7 +3,7 @@ use std::net::Ipv4Addr;
 use clap::Parser;
 use substrate_padawan::{error, handshake};
 use tokio::net::TcpStream;
-use tracing_subscriber::{FmtSubscriber, EnvFilter};
+use tracing_subscriber::{EnvFilter, FmtSubscriber};
 
 fn use_tracing_subscriber() {
     let subscriber = FmtSubscriber::builder()

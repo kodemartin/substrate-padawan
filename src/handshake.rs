@@ -71,7 +71,7 @@ impl PadawanDialer {
                 HandshakeState::Initialization => {
                     tracing::info!("Initializing handshake");
                     let hello = EncodedProtocol::from(Protocol::Multistream);
-                    if mirror::concurrent(&mut read, &mut write, hello.as_bytes()).await {
+                    if mirror::concurrent(&mut read, &mut write, hello).await {
                         self.state = HandshakeState::Negotiation;
                     } else {
                         self.state = HandshakeState::Failed;
@@ -80,7 +80,7 @@ impl PadawanDialer {
                 HandshakeState::Negotiation => {
                     tracing::info!("Negotiating protocol");
                     let noise = EncodedProtocol::from(Protocol::Noise);
-                    if mirror::dial(&mut read, &mut write, noise.as_bytes()).await {
+                    if mirror::dial(&mut read, &mut write, noise).await {
                         self.state = HandshakeState::Noise;
                     } else {
                         self.state = HandshakeState::Failed;
