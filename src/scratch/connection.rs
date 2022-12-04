@@ -1,8 +1,10 @@
+//! Handle connections between peers implementing the `libp2p` networking stack.
 use futures::{stream::FuturesUnordered, StreamExt};
 use libp2p::{identity, PeerId};
 use tokio::net::{TcpListener, TcpStream};
 
-use super::error::PadawanError;
+use crate::error::PadawanError;
+
 use super::multistream_select::{mirror, Protocol};
 use super::noise;
 

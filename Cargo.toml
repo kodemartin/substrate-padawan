@@ -4,11 +4,12 @@ version = "0.1.0"
 edition = "2021"
 
 [[bin]]
-name = "substrate-padawan"
+name = "substrate-swarm"
+path = "src/bin/swarm.rs"
 
 [[bin]]
-name = "substrate-ground"
-path = "src/ground.rs"
+name = "substrate-scratch"
+path = "src/bin/scratch.rs"
 
 [dependencies]
 clap = { version = "4", features = ["derive"]}

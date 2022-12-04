@@ -4,7 +4,7 @@ use std::time::Duration;
 use clap::Parser;
 use libp2p::multiaddr;
 use libp2p::swarm::dummy;
-use substrate_padawan::{error, handshake, SwarmPadawan};
+use substrate_padawan::{error, swarm};
 use tracing_subscriber::FmtSubscriber;
 
 fn use_tracing_subscriber() {
@@ -39,8 +39,8 @@ async fn main() -> error::Result<()> {
     let mut remote = multiaddr::Multiaddr::from(args.ip.parse::<Ipv4Addr>()?);
     remote.push(multiaddr::Protocol::Tcp(args.port));
 
-    let padawan = SwarmPadawan::new(dummy::Behaviour, args.timeout.map(Duration::from_secs));
+    let padawan = swarm::Padawan::new(dummy::Behaviour, args.timeout.map(Duration::from_secs));
     tracing::info!("Local peer id: {:?}", padawan.peer_id());
 
-    handshake(padawan, remote).await
+    swarm::handshake(padawan, remote).await
 }

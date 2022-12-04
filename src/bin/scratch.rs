@@ -1,7 +1,7 @@
 use std::net::Ipv4Addr;
 
 use clap::Parser;
-use substrate_padawan::{error, handshake};
+use substrate_padawan::{error, scratch::connection};
 use tokio::net::{TcpListener, TcpStream};
 use tracing_subscriber::{EnvFilter, FmtSubscriber};
 
@@ -41,5 +41,5 @@ async fn main() -> error::Result<()> {
     let dialer = TcpStream::connect((ipv4, args.port)).await?;
     let listener = TcpListener::bind("127.0.0.1:0").await?;
     tracing::info!("Listening on {}", listener.local_addr()?);
-    handshake::Padawan::new(dialer, listener).start().await
+    connection::Padawan::new(dialer, listener).start().await
 }

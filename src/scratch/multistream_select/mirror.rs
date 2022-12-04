@@ -6,7 +6,7 @@ use tokio::net::tcp::{ReadHalf, WriteHalf};
 
 use super::Protocol;
 use crate::error::PadawanError;
-use crate::noise;
+use crate::scratch::noise;
 
 /// Read and write concurrently to the stream.
 ///
