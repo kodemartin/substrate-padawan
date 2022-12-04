@@ -7,11 +7,9 @@ The library exposes two implementations of the `libp2p` [connection ugrade][libp
 * A low-level implementation under `src/scratch` built on top of [snow][]
 * A high-level implementation build on top of [libp2p][] in `src/swarm.rs` 
 
-The connection-upgrade process involves the negotiation of the [noise][] and
-[yamux][] protocols through the [multistream-select][mstream] protocol.
+The connection-upgrade process involves the negotiation of the [noise][] and [yamux][] protocols through the [multistream-select][mstream] protocol.
 
-Upon successful negotiation of the [noise][] protocol the [noise-handshake][]
-is implemented for both the dialer and listener role.
+Upon successful negotiation of the [noise][] protocol the [noise-handshake][] is implemented for both the dialer and listener role.
 
 ## Command-line applications
 
@@ -48,6 +46,8 @@ Options:
           Print version information
 
 ```
+
+**Note**: Currently the implementation keeps listening for incoming connections.
 
 ### High-level (`substrate-swarm`)
 
