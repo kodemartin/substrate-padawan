@@ -2,7 +2,7 @@ use std::net::Ipv4Addr;
 
 use clap::Parser;
 use substrate_padawan::{error, handshake};
-use tokio::net::TcpStream;
+use tokio::net::{TcpListener, TcpStream};
 use tracing_subscriber::{EnvFilter, FmtSubscriber};
 
 fn use_tracing_subscriber() {
@@ -38,10 +38,8 @@ async fn main() -> error::Result<()> {
 
     let args = CliArgs::parse();
     let ipv4 = args.ip.parse::<Ipv4Addr>()?;
-    let mut dialer = handshake::Padawan::from(TcpStream::connect((ipv4, args.port)).await?);
-    tracing::info!("Local peer with id: {:?}", dialer.peer_id());
-    dialer.dial().await?;
-    assert!(dialer.handshake_state().completed());
-    tracing::info!("Established connection");
-    Ok(())
+    let dialer = TcpStream::connect((ipv4, args.port)).await?;
+    let listener = TcpListener::bind("127.0.0.1:0").await?;
+    tracing::info!("Listening on {}", listener.local_addr()?);
+    handshake::Padawan::new(dialer, listener).start().await
 }

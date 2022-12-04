@@ -1,5 +1,6 @@
+use futures::{stream::FuturesUnordered, StreamExt};
 use libp2p::{identity, PeerId};
-use tokio::net::TcpStream;
+use tokio::net::{TcpListener, TcpStream};
 
 use super::error::PadawanError;
 use super::multistream_select::{mirror, Protocol};
@@ -28,20 +29,68 @@ impl HandshakeState {
     }
 }
 
-/// Represent the local node
+/// The local node
+///
+/// Capable of bidirectional communication with its peers.
 pub struct Padawan {
+    dialer: Connection,
+    listener: TcpListener,
+    keypair: identity::Keypair,
+    peer_id: PeerId,
+}
+
+impl Padawan {
+    /// Create a new local node
+    pub fn new(dialer: TcpStream, listener: TcpListener) -> Self {
+        let keypair = identity::Keypair::generate_ed25519();
+        let peer_id = PeerId::from_public_key(&keypair.public());
+        tracing::info!("Local peer id: {}", peer_id);
+        Self {
+            dialer: Connection::new(dialer, keypair.clone(), Some(peer_id)),
+            listener,
+            keypair,
+            peer_id,
+        }
+    }
+
+    /// Start dialing and accepting new connections
+    pub async fn start(mut self) -> Result<(), PadawanError> {
+        let mut dial_listen = FuturesUnordered::new();
+        dial_listen.push(tokio::spawn(async move { self.dialer.dial().await }));
+        dial_listen.push(tokio::spawn(async move {
+            loop {
+                let (keypair, peer_id) = (self.keypair.clone(), self.peer_id);
+                if let Ok((socket, addr)) = self.listener.accept().await {
+                    tracing::info!("Incoming connection {}", addr);
+                    tokio::spawn(async move {
+                        let mut listener = Connection::new(socket, keypair, Some(peer_id));
+                        listener.listen().await
+                    });
+                }
+            }
+        }));
+        while dial_listen.next().await.is_some() {
+            // We keep awaiting for both the dialer and the listener
+        }
+        Ok(())
+    }
+}
+
+/// Represent a connection of the local node acting either as a dialer or listener
+pub struct Connection {
     wire: TcpStream,
     state: HandshakeState,
     keypair: identity::Keypair,
     peer_id: PeerId,
 }
 
-impl From<TcpStream> for Padawan {
-    fn from(stream: TcpStream) -> Self {
+impl From<TcpStream> for Connection {
+    /// Create a new connection with auto-generated [`PeerId`][].
+    fn from(wire: TcpStream) -> Self {
         let keypair = identity::Keypair::generate_ed25519();
         let peer_id = PeerId::from_public_key(&keypair.public());
         Self {
-            wire: stream,
+            wire,
             state: Default::default(),
             keypair,
             peer_id,
@@ -49,7 +98,18 @@ impl From<TcpStream> for Padawan {
     }
 }
 
-impl Padawan {
+impl Connection {
+    /// Create a new connection associated with the given [`Keypair`][`identity::Keypair`].
+    pub fn new(wire: TcpStream, keypair: identity::Keypair, peer_id: Option<PeerId>) -> Self {
+        let peer_id = peer_id.unwrap_or_else(|| PeerId::from_public_key(&keypair.public()));
+        Self {
+            wire,
+            state: Default::default(),
+            keypair,
+            peer_id,
+        }
+    }
+
     pub fn peer_id(&self) -> &PeerId {
         &self.peer_id
     }
