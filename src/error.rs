@@ -6,6 +6,10 @@ use thiserror::Error;
 /// Variants of service-specific errors.
 #[derive(Error, Debug)]
 pub enum PadawanError {
+    #[error("invalid encoding of a multistream protocol")]
+    InvalidMultistreamEncoding,
+    #[error(transparent)]
+    VarintDecode(#[from] unsigned_varint::decode::Error),
     #[error("handshake failed")]
     HandshakeFailed,
     #[error("exceeded maximum noise frame size")]

@@ -2,7 +2,7 @@ use libp2p::{identity, PeerId};
 use tokio::net::TcpStream;
 
 use super::error::PadawanError;
-use super::multistream_select::{mirror, EncodedProtocol, Protocol};
+use super::multistream_select::{mirror, Protocol};
 use super::noise;
 
 /// Represent the state of the `libp2p` upgrade negotionation
@@ -28,7 +28,7 @@ impl HandshakeState {
     }
 }
 
-/// Represent the local node as dialer
+/// Represent the local node
 pub struct Padawan {
     wire: TcpStream,
     state: HandshakeState,
@@ -66,8 +66,8 @@ impl Padawan {
             match self.state {
                 HandshakeState::Initialization => {
                     tracing::info!("Initializing handshake");
-                    let hello = EncodedProtocol::from(Protocol::Multistream);
-                    if mirror::concurrent(&mut read, &mut write, hello).await {
+                    let hello = Protocol::Multistream;
+                    if let Ok(true) = mirror::concurrent(&mut read, &mut write, hello).await {
                         self.state = HandshakeState::Negotiation;
                     } else {
                         self.state = HandshakeState::Failed;
@@ -75,8 +75,8 @@ impl Padawan {
                 }
                 HandshakeState::Negotiation => {
                     tracing::info!("Negotiating protocol");
-                    let noise = EncodedProtocol::from(Protocol::Noise);
-                    if mirror::dial(&mut read, &mut write, noise).await {
+                    let noise = Protocol::Noise;
+                    if let Ok(true) = mirror::dial(&mut read, &mut write, noise).await {
                         self.state = HandshakeState::Noise;
                     } else {
                         self.state = HandshakeState::Failed;
@@ -92,12 +92,24 @@ impl Padawan {
                 }
                 HandshakeState::Multiplex(ref mut transport) => {
                     tracing::info!("Negotiating multiplex protocol");
-                    let headers = EncodedProtocol::from(Protocol::Multistream);
-                    mirror::dial_noise(&mut read, &mut write, headers, transport).await?;
-                    let yamux = EncodedProtocol::from(Protocol::Yamux);
-                    mirror::dial_noise(&mut read, &mut write, yamux, transport).await?;
-                    self.state = HandshakeState::Established;
-                    tracing::info!("Connection established");
+                    let headers = Protocol::Multistream;
+                    if mirror::dial_noise(&mut read, &mut write, headers, transport)
+                        .await
+                        .is_err()
+                    {
+                        self.state = HandshakeState::Failed;
+                        continue;
+                    }
+                    let yamux = Protocol::Yamux;
+                    if mirror::dial_noise(&mut read, &mut write, yamux, transport)
+                        .await
+                        .is_ok()
+                    {
+                        self.state = HandshakeState::Established;
+                        tracing::info!("Connection established");
+                    } else {
+                        self.state = HandshakeState::Failed;
+                    }
                 }
                 HandshakeState::Failed => return Err(PadawanError::HandshakeFailed),
                 HandshakeState::Established => break,

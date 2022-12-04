@@ -4,7 +4,7 @@
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::tcp::{ReadHalf, WriteHalf};
 
-use super::EncodedProtocol;
+use super::Protocol;
 use crate::error::PadawanError;
 use crate::noise;
 
@@ -17,24 +17,27 @@ use crate::noise;
 pub async fn concurrent<'a>(
     read: &mut ReadHalf<'a>,
     write: &mut WriteHalf<'a>,
-    protocol: EncodedProtocol,
-) -> bool {
+    protocol: Protocol,
+) -> Result<bool, PadawanError> {
     let (mut send, mut recv) = (false, false);
-    let mut response = vec![0_u8; protocol.as_ref().len()];
+    let encoded = protocol.encode();
+    let mut response = vec![0_u8; encoded.len()];
     loop {
         tokio::select!(
-            Ok(n_read) = read.read_exact(&mut response), if !recv  => {
-                tracing::trace!("read {:?}", response.as_slice());
+            res = read.read_exact(&mut response), if !recv  => {
+                let n_read = res?;
+                tracing::trace!("multistream read {:?}", response.as_slice());
                 recv = n_read > 0;
             },
-            Ok(_) = write.write(protocol.as_ref()), if !send => {
-                tracing::trace!("wrote {:?} ", protocol.as_ref());
+            res = write.write(&encoded), if !send => {
+                res?;
+                tracing::trace!("multistream wrote {:?} ", &encoded[..]);
                 send = true;
             },
             else => break
         );
     }
-    response == protocol.as_ref()
+    Ok(response == encoded.as_slice())
 }
 
 /// First write to the stream and then get the peer response.
@@ -43,33 +46,52 @@ pub async fn concurrent<'a>(
 pub async fn dial<'a>(
     read: &mut ReadHalf<'a>,
     write: &mut WriteHalf<'a>,
-    protocol: EncodedProtocol,
-) -> bool {
-    let mut response = vec![0_u8; protocol.as_ref().len()];
-    if write.write_all(protocol.as_ref()).await.is_err() {
-        return false;
-    }
+    protocol: Protocol,
+) -> Result<bool, PadawanError> {
+    let encoded = protocol.encode();
+    let mut response = vec![0_u8; encoded.len()];
+    write.write_all(&encoded).await?;
     loop {
-        if let Ok(n) = read.read_exact(&mut response).await {
-            if n > 0 {
-                tracing::trace!("read {:?} bytes", n);
-                break;
-            }
+        if read.read_exact(&mut response).await? > 0 {
+            break;
         }
     }
-    response == protocol.as_ref()
+    Ok(encoded.as_slice() == response)
+}
+
+/// First read from the stream and then send the matching response
+/// to the remote peer.
+///
+/// # Errors
+///
+/// Fails if the incoming payload has invalid encoding.
+pub async fn listen<'a>(
+    read: &mut ReadHalf<'a>,
+    write: &mut WriteHalf<'a>,
+    protocol: Protocol,
+) -> Result<(), PadawanError> {
+    let encoded = protocol.encode();
+    let mut incoming = vec![0_u8; encoded.len()];
+    loop {
+        if read.read_exact(&mut incoming).await? > 0 {
+            break;
+        }
+    }
+    let response = Protocol::decode(&incoming)?.encode();
+    Ok(write.write_all(&response).await?)
 }
 
 /// Like [`dial`][] but for use during noise transport.
 pub async fn dial_noise<'a>(
     read: &mut ReadHalf<'a>,
     write: &mut WriteHalf<'a>,
-    protocol: EncodedProtocol,
+    protocol: Protocol,
     transport: &mut noise::Transport,
 ) -> Result<bool, PadawanError> {
+    let encoded = protocol.encode();
     // Send
     let buffer = transport.buffer().write();
-    let n = protocol.as_ref().read(buffer).await?;
+    let n = encoded.as_slice().read(buffer).await?;
     buffer.truncate(n);
     let encrypted = transport.encrypt()?;
     noise::wire::send(write, encrypted).await?;
@@ -78,5 +100,5 @@ pub async fn dial_noise<'a>(
     let buffer = transport.buffer().encrypted();
     noise::wire::recv(read, buffer).await?;
     let decrypted = transport.decrypt()?;
-    Ok(protocol.as_ref() == decrypted)
+    Ok(encoded.as_slice() == decrypted)
 }
