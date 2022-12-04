@@ -38,9 +38,9 @@ async fn main() -> error::Result<()> {
 
     let args = CliArgs::parse();
     let ipv4 = args.ip.parse::<Ipv4Addr>()?;
-    let mut dialer = handshake::PadawanDialer::from(TcpStream::connect((ipv4, args.port)).await?);
+    let mut dialer = handshake::Padawan::from(TcpStream::connect((ipv4, args.port)).await?);
     tracing::info!("Local peer with id: {:?}", dialer.peer_id());
-    dialer.handshake().await?;
+    dialer.dial().await?;
     assert!(dialer.handshake_state().completed());
     tracing::info!("Established connection");
     Ok(())

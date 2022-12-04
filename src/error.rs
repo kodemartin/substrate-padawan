@@ -6,6 +6,8 @@ use thiserror::Error;
 /// Variants of service-specific errors.
 #[derive(Error, Debug)]
 pub enum PadawanError {
+    #[error("handshake failed")]
+    HandshakeFailed,
     #[error("exceeded maximum noise frame size")]
     NoiseFrameSizeExceeded,
     #[error("missing remote noise key")]

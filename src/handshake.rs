@@ -26,26 +26,22 @@ impl HandshakeState {
     pub fn completed(&self) -> bool {
         matches!(self, Self::Established)
     }
-
-    pub fn failed(&self) -> bool {
-        matches!(self, Self::Failed)
-    }
 }
 
 /// Represent the local node as dialer
-pub struct PadawanDialer {
-    dialer: TcpStream,
+pub struct Padawan {
+    wire: TcpStream,
     state: HandshakeState,
     keypair: identity::Keypair,
     peer_id: PeerId,
 }
 
-impl From<TcpStream> for PadawanDialer {
+impl From<TcpStream> for Padawan {
     fn from(stream: TcpStream) -> Self {
         let keypair = identity::Keypair::generate_ed25519();
         let peer_id = PeerId::from_public_key(&keypair.public());
         Self {
-            dialer: stream,
+            wire: stream,
             state: Default::default(),
             keypair,
             peer_id,
@@ -53,7 +49,7 @@ impl From<TcpStream> for PadawanDialer {
     }
 }
 
-impl PadawanDialer {
+impl Padawan {
     pub fn peer_id(&self) -> &PeerId {
         &self.peer_id
     }
@@ -63,10 +59,10 @@ impl PadawanDialer {
         &self.state
     }
 
-    /// Perform the handshake with the remote peer
-    pub async fn handshake(&mut self) -> Result<(), PadawanError> {
-        let (mut read, mut write) = self.dialer.split();
-        while !self.state.completed() && !self.state.failed() {
+    /// Perform the handshake with the remote peer as a dialer
+    pub async fn dial(&mut self) -> Result<(), PadawanError> {
+        let (mut read, mut write) = self.wire.split();
+        loop {
             match self.state {
                 HandshakeState::Initialization => {
                     tracing::info!("Initializing handshake");
@@ -103,8 +99,8 @@ impl PadawanDialer {
                     self.state = HandshakeState::Established;
                     tracing::info!("Connection established");
                 }
-                HandshakeState::Failed => unreachable!(),
-                _ => {}
+                HandshakeState::Failed => return Err(PadawanError::HandshakeFailed),
+                HandshakeState::Established => break,
             }
         }
         Ok(())
