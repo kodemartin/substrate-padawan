@@ -24,7 +24,7 @@ pub fn encode(bytes: &[u8]) -> Vec<u8> {
 }
 
 /// Supported protocols
-#[derive(Debug, Clone, Copy, Hash)]
+#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
 pub enum Protocol {
     Multistream,
     Noise,

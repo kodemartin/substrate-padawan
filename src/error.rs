@@ -6,6 +6,8 @@ use thiserror::Error;
 /// Variants of service-specific errors.
 #[derive(Error, Debug)]
 pub enum PadawanError {
+    #[error("received unexpected multistream protocol")]
+    UnexpectedMultistream,
     #[error("invalid encoding of a multistream protocol")]
     InvalidMultistreamEncoding,
     #[error(transparent)]

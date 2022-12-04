@@ -134,6 +134,20 @@ impl<T: NoiseState> StatefulBuf<T> {
 pub type Handshake = StatefulBuf<HandshakeState>;
 
 impl Handshake {
+    /// Build a handshake for the side that will respond to the first message
+    pub fn build_responder() -> Result<Self, PadawanError> {
+        let builder = Builder::new(PATTERN.parse()?);
+        let keypair = builder.generate_keypair()?;
+        let state = builder
+            .local_private_key(&keypair.private)
+            .build_responder()?;
+        Ok(Self {
+            state,
+            buffer: Default::default(),
+            keypair,
+        })
+    }
+
     /// Build a handshake for the side that will send the first message
     pub fn build_initiator() -> Result<Self, PadawanError> {
         let builder = Builder::new(PATTERN.parse()?);

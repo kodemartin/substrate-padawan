@@ -77,8 +77,11 @@ pub async fn listen<'a>(
             break;
         }
     }
-    let response = Protocol::decode(&incoming)?.encode();
-    Ok(write.write_all(&response).await?)
+    let incoming = Protocol::decode(&incoming)?;
+    if incoming != protocol {
+        return Err(PadawanError::UnexpectedMultistream);
+    }
+    Ok(write.write_all(&incoming.encode()).await?)
 }
 
 /// Like [`dial`][] but for use during noise transport.
@@ -101,4 +104,30 @@ pub async fn dial_noise<'a>(
     noise::wire::recv(read, buffer).await?;
     let decrypted = transport.decrypt()?;
     Ok(encoded.as_slice() == decrypted)
+}
+
+/// Like [`listen`][] but for use during noise transport.
+pub async fn listen_noise<'a>(
+    read: &mut ReadHalf<'a>,
+    write: &mut WriteHalf<'a>,
+    protocol: Protocol,
+    transport: &mut noise::Transport,
+) -> Result<(), PadawanError> {
+    // Receive
+    let buffer = transport.buffer().encrypted();
+    noise::wire::recv(read, buffer).await?;
+    let decrypted = transport.decrypt()?;
+
+    let incoming = Protocol::decode(decrypted)?;
+    if incoming != protocol {
+        return Err(PadawanError::UnexpectedMultistream);
+    }
+    // Send
+    let response = incoming.encode();
+    let buffer = transport.buffer().write();
+    let n = response.as_slice().read(buffer).await?;
+    buffer.truncate(n);
+    let encrypted = transport.encrypt()?;
+    noise::wire::send(write, encrypted).await?;
+    Ok(())
 }

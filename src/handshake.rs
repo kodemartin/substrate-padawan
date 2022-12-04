@@ -117,4 +117,63 @@ impl Padawan {
         }
         Ok(())
     }
+
+    /// Perform the handshake with the remote peer as a listener
+    pub async fn listen(&mut self) -> Result<(), PadawanError> {
+        let (mut read, mut write) = self.wire.split();
+        loop {
+            match self.state {
+                HandshakeState::Initialization => {
+                    tracing::info!("Initializing handshake");
+                    let hello = Protocol::Multistream;
+                    if let Ok(true) = mirror::concurrent(&mut read, &mut write, hello).await {
+                        self.state = HandshakeState::Negotiation;
+                    } else {
+                        self.state = HandshakeState::Failed;
+                    }
+                }
+                HandshakeState::Negotiation => {
+                    tracing::info!("Negotiating protocol");
+                    let noise = Protocol::Noise;
+                    if mirror::listen(&mut read, &mut write, noise).await.is_ok() {
+                        self.state = HandshakeState::Noise;
+                    } else {
+                        self.state = HandshakeState::Failed;
+                    }
+                }
+                HandshakeState::Noise => {
+                    let mut handshake = noise::libp2p::NoiseHandshake::listener()?;
+                    handshake.recv_hello(&mut read).await?;
+                    handshake.send_identity(&mut write, &self.keypair).await?;
+                    handshake.recv_identity(&mut read).await?;
+                    let transport = handshake.into_inner().try_into()?;
+                    self.state = HandshakeState::Multiplex(Box::new(transport));
+                }
+                HandshakeState::Multiplex(ref mut transport) => {
+                    tracing::info!("Negotiating multiplex protocol");
+                    let headers = Protocol::Multistream;
+                    if mirror::listen_noise(&mut read, &mut write, headers, transport)
+                        .await
+                        .is_err()
+                    {
+                        self.state = HandshakeState::Failed;
+                        continue;
+                    }
+                    let yamux = Protocol::Yamux;
+                    if mirror::listen_noise(&mut read, &mut write, yamux, transport)
+                        .await
+                        .is_ok()
+                    {
+                        self.state = HandshakeState::Established;
+                        tracing::info!("Connection established");
+                    } else {
+                        self.state = HandshakeState::Failed;
+                    }
+                }
+                HandshakeState::Failed => return Err(PadawanError::HandshakeFailed),
+                HandshakeState::Established => break,
+            }
+        }
+        Ok(())
+    }
 }

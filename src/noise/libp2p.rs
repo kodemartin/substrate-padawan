@@ -69,6 +69,11 @@ impl NoiseHandshake {
         Ok(Self::from(Handshake::build_initiator()?))
     }
 
+    /// Build a responder handshake state
+    pub fn listener() -> Result<Self, PadawanError> {
+        Ok(Self::from(Handshake::build_responder()?))
+    }
+
     /// Get the inner stateful buffer of the noise-handshake state
     pub fn into_inner(self) -> Handshake {
         self.0
@@ -79,6 +84,16 @@ impl NoiseHandshake {
         let encrypted = self.0.encrypt()?;
         let n = wire::send(write, encrypted).await?;
         tracing::trace!("Noise hello: {:?} bytes", n);
+        Ok(())
+    }
+
+    /// Listener initial communication
+    pub async fn recv_hello<'a>(
+        &mut self,
+        read: &mut tcp::ReadHalf<'a>,
+    ) -> Result<(), PadawanError> {
+        wire::recv(read, self.0.buffer().encrypted()).await?;
+        self.0.decrypt()?;
         Ok(())
     }
 
