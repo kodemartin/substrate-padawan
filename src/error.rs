@@ -6,6 +6,32 @@ use thiserror::Error;
 /// Variants of service-specific errors.
 #[derive(Error, Debug)]
 pub enum PadawanError {
+    #[error("received unexpected multistream protocol")]
+    UnexpectedMultistream,
+    #[error("invalid encoding of a multistream protocol")]
+    InvalidMultistreamEncoding,
+    #[error(transparent)]
+    VarintDecode(#[from] unsigned_varint::decode::Error),
+    #[error("handshake failed")]
+    HandshakeFailed,
+    #[error("exceeded maximum noise frame size")]
+    NoiseFrameSizeExceeded,
+    #[error("missing remote noise key")]
+    MissingRemoteNoiseKey,
+    #[error("could not verify remote peer identity")]
+    IdVerification,
+    #[error(transparent)]
+    SigningError(#[from] libp2p::identity::error::SigningError),
+    #[error(transparent)]
+    KeyDecodeError(#[from] libp2p::identity::error::DecodingError),
+    #[error(transparent)]
+    EncodePayload(#[from] prost::EncodeError),
+    #[error(transparent)]
+    DecodePayload(#[from] prost::DecodeError),
+    #[error(transparent)]
+    Snow(#[from] snow::error::Error),
+    #[error(transparent)]
+    Io(#[from] std::io::Error),
     #[error(transparent)]
     AddressParse(#[from] AddrParseError),
     #[error(transparent)]
