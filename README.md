@@ -153,6 +153,7 @@ Nov 26 20:29:39.868  INFO substrate_padawan: Established connection with PeerId(
 [mstream]: https://github.com/multiformats/multistream-select
 [node-install]: https://github.com/substrate-developer-hub/substrate-node-template#rust-setup
 [noise]: http://noiseprotocol.org/
+[noise-handshake]: https://github.com/libp2p/specs/tree/master/noise#the-noise-handshake
 [yamux]: https://github.com/hashicorp/yamux/blob/master/spec.md
 [libp2p]: https://github.com/libp2p/rust-libp2p
 [smoldot]: https://github.com/paritytech/smoldot
